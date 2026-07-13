@@ -60,9 +60,9 @@ export class PassportScene extends Scene {
       const stormStops = this.bottle.stops.filter(s => s.tide === 'storm').length;
       const score = hopCount * 10 + (isRare ? 50 : 0) + stormStops * 5;
       this.score = score;
-      if (score >= 101) this.tier = 'Tidemark Legend';
-      else if (score >= 51) this.tier = 'Legendary Wanderer';
-      else if (score >= 21) this.tier = 'Storied Vessel';
+      if (score >= 200) this.tier = 'Tidemark Legend';
+      else if (score >= 100) this.tier = 'Legendary Wanderer';
+      else if (score >= 50) this.tier = 'Storied Vessel';
       else this.tier = 'Drifting Letter';
     }
 

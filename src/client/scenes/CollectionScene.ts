@@ -127,9 +127,9 @@ export class CollectionScene extends Scene {
       const stormStops = (bottle.stops || []).filter(s => s.tide === 'storm').length;
       const score = hopCount * 10 + (isRare ? 50 : 0) + stormStops * 5;
       let tier: string;
-      if (score >= 101) tier = 'Tidemark Legend';
-      else if (score >= 51) tier = 'Legendary Wanderer';
-      else if (score >= 21) tier = 'Storied Vessel';
+      if (score >= 200) tier = 'Tidemark Legend';
+      else if (score >= 100) tier = 'Legendary Wanderer';
+      else if (score >= 50) tier = 'Storied Vessel';
       else tier = 'Drifting Letter';
 
       this.add.text(56, yOffset + 12, tier, {
@@ -159,6 +159,58 @@ export class CollectionScene extends Scene {
 
       yOffset += 80;
     });
+
+    // ─── Postcards Section ───
+    const postcards: any[] = playerData.postcards || [];
+    if (postcards.length > 0) {
+      yOffset += 20;
+
+      // Section header
+      const pcHeader = this.add.text(width / 2, yOffset, 'Postcards from your Bottles', {
+        fontFamily: 'Outfit, Arial', fontSize: '16px', color: '#d4a574', fontStyle: 'bold',
+      }).setOrigin(0.5);
+      this.contentContainer!.add(pcHeader);
+      yOffset += 30;
+
+      const pcSubtext = this.add.text(width / 2, yOffset, 'Someone kept a bottle you cast!', {
+        fontFamily: 'Outfit, Arial', fontSize: '11px', color: '#86c5da',
+      }).setOrigin(0.5).setAlpha(0.6);
+      this.contentContainer!.add(pcSubtext);
+      yOffset += 25;
+
+      postcards.forEach((pc: any) => {
+        const pcCardG = this.add.graphics();
+        pcCardG.fillStyle(0x1a3a5c, 0.35);
+        pcCardG.fillRoundedRect(16, yOffset, width - 32, 60, 10);
+        pcCardG.lineStyle(1, 0xd4a574, 0.3);
+        pcCardG.strokeRoundedRect(16, yOffset, width - 32, 60, 10);
+        this.contentContainer!.add(pcCardG);
+
+        const pcTint = TINT_COLORS[pc.tint] || 0x7ec8b8;
+        const pcBottleG = this.add.graphics();
+        pcBottleG.fillStyle(pcTint, 0.85);
+        pcBottleG.fillRoundedRect(30, yOffset + 12, 12, 20, 3);
+        this.contentContainer!.add(pcBottleG);
+
+        const pcTierText = this.add.text(52, yOffset + 10, pc.tier || 'Drifting Letter', {
+          fontFamily: 'Outfit, Arial', fontSize: '12px', color: '#d4a574', fontStyle: 'bold',
+        });
+        this.contentContainer!.add(pcTierText);
+
+        const pcDetails = `${pc.hopCount || 0} hops \u00B7 ${pc.totalStops || 0} stops \u00B7 Kept by a stranger`;
+        const pcDetText = this.add.text(52, yOffset + 28, pcDetails, {
+          fontFamily: 'Outfit, Arial', fontSize: '10px', color: '#86c5da',
+        }).setAlpha(0.6);
+        this.contentContainer!.add(pcDetText);
+
+        const pcIcon = this.add.text(width - 30, yOffset + 20, '\u2709\uFE0F', {
+          fontSize: '18px',
+        }).setOrigin(1, 0.5);
+        this.contentContainer!.add(pcIcon);
+
+        yOffset += 70;
+      });
+    }
 
     this.maxScroll = Math.max(0, yOffset - (height - 160));
 

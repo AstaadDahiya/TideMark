@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { context, redis, reddit } from '@devvit/web/server';
 import type { Bottle, Stop, BottleTint, StampId } from '../../shared/types';
 import { STAMP_MAP, MAX_RECENT_TRAVELERS } from '../../shared/constants';
-import { pushBottle, popBottle } from '../services/queueService';
+import { pushBottle, popBottle, peekBottle } from '../services/queueService';
 import { getDayData } from '../services/tideService';
 import { getVoyageScore, getVoyageTier, getLossChance } from '../services/scoreService';
 import { addLight } from '../services/lighthouseService';
@@ -94,6 +94,29 @@ bottle.post('/create', async (c) => {
   }
 });
 
+// POST /api/bottle/peek — preview a bottle without removing from queue
+bottle.post('/peek', async (c) => {
+  const userId = await resolveUserId();
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+
+  try {
+    const today = getToday();
+    const peekedBottle = await peekBottle(today, userId);
+
+    if (!peekedBottle) {
+      return c.json({ bottle: null, message: 'No bottles drifting nearby' });
+    }
+
+    const score = getVoyageScore(peekedBottle);
+    const tier = getVoyageTier(score);
+
+    return c.json({ bottle: peekedBottle, score, tier });
+  } catch (e) {
+    console.error('bottle/peek: Server error', e);
+    return c.json({ error: 'Server error' }, 500);
+  }
+});
+
 // POST /api/bottle/catch — catch the next eligible bottle
 bottle.post('/catch', async (c) => {
   const userId = await resolveUserId();
@@ -168,6 +191,18 @@ bottle.post('/keep', async (c) => {
     keptAt: Date.now(),
   };
   await redis.set(`postcard:${bottleId}`, JSON.stringify(postcard));
+
+  // Push postcard to the original creator's player data so they can see it
+  if (btl.creatorId && btl.creatorId !== userId) {
+    try {
+      const creator = await getPlayer(btl.creatorId);
+      if (!creator.postcards) creator.postcards = [];
+      creator.postcards.push(postcard);
+      await savePlayer(btl.creatorId, creator);
+    } catch (e) {
+      console.error('bottle/keep: Failed to send postcard to creator', e);
+    }
+  }
 
   return c.json({
     success: true,

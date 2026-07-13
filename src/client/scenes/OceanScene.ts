@@ -426,7 +426,8 @@ export class OceanScene extends Scene {
 
   private async tryLoadBottle() {
     try {
-      const res = await fetch('/api/bottle/catch', { method: 'POST' });
+      // Peek at the queue — does NOT remove the bottle
+      const res = await fetch('/api/bottle/peek', { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
         if (data.bottle) {
@@ -498,9 +499,9 @@ export class OceanScene extends Scene {
     const stormStops = (bottle.stops || []).filter((s: any) => s.tide === 'storm').length;
     const score = hopCount * 10 + (isRare ? 50 : 0) + stormStops * 5;
 
-    if (score >= 101) return 'Tidemark Legend';
-    if (score >= 51) return 'Legendary Wanderer';
-    if (score >= 21) return 'Storied Vessel';
+    if (score >= 200) return 'Tidemark Legend';
+    if (score >= 100) return 'Legendary Wanderer';
+    if (score >= 50) return 'Storied Vessel';
     return 'Drifting Letter';
   }
 
@@ -518,9 +519,28 @@ export class OceanScene extends Scene {
 
   // ─── Interactions ───
 
-  private onBottleTap() {
-    if (this.state.caughtBottle) {
-      this.scene.start('PassportScene', { bottle: this.state.caughtBottle });
+  private async onBottleTap() {
+    if (!this.state.caughtBottle) return;
+
+    // Now actually catch (remove from queue) when user commits
+    try {
+      const res = await fetch('/api/bottle/catch', { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.bottle) {
+          this.scene.start('PassportScene', { bottle: data.bottle });
+        } else {
+          // Someone else caught it between peek and tap
+          this.state.caughtBottle = null;
+          this.state.hasBottleToCatch = false;
+          this.bottleContainer?.setVisible(false);
+          this.statusText?.setText('The bottle drifted away! Try again later.');
+        }
+      } else {
+        this.statusText?.setText('Could not catch the bottle. Try again.');
+      }
+    } catch {
+      this.statusText?.setText('Connection error. Try again.');
     }
   }
 

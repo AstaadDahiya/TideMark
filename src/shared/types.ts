@@ -44,6 +44,7 @@ export interface Player {
   bottlesKept: number;
   bottlesRelaunched: number;
   collection: string[]; // bottle IDs
+  postcards?: any[];    // postcards received when someone keeps your bottle
   streak: number;
   lastActiveDate: string; // YYYY-MM-DD
 }
